@@ -25,16 +25,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 生成 TTS 音频地址
     const url = getAudioUrl(t, { lang: 'en', slow: false, host: 'https://translate.google.com' })
 
-    // 拉取远端 MP3
+    // 拉取远端 MP3（返回的是 Web ReadableStream）
     const resp = await fetch(url)
     const webStream = resp.body
     if (!resp.ok || !webStream) {
       return res.status(502).json({ error: 'upstream tts failed' })
     }
 
-    // Web ReadableStream -> Node Readable
+    // 转成 Node Readable 再逐块写回
     const nodeStream = Readable.fromWeb(webStream as any)
-
     res.setHeader('Content-Type', 'audio/mpeg')
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
 
